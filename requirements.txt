@@ -3,3 +3,4 @@ librosa
 tensorflow
 numpy
 pydub
+tempfile
