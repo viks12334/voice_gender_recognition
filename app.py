@@ -11,18 +11,18 @@ from tensorflow.keras.models import load_model
 import os
 import tempfile
 
-# Parameters to match the model's expected input
-num_mfcc = 13  # Change this based on your model's architecture
-max_pad_length = 173  # Change this based on your model's architecture
+# Define the model's expected input parameters
+num_mfcc = 13  # Update this based on your model's expected input
+max_pad_length = 173  # Update this based on your model's expected input
 
-# Load and return the pre-trained model
+# Load and return the pre-trained model, and print its expected input shape
 def load_pretrained_model():
     model_path = './voice__fm_model.h5'
     model = load_model(model_path)
-    print(f"Model input shape: {model.input_shape}")
+    print(f"Model input shape: {model.layers[0].input_shape}")  # Assuming the first layer is the input layer
     return model
 
-# Extract MFCC features from audio
+# Extract MFCC features from audio, ensuring they match the expected input shape
 def extract_mfcc(audio_path, num_mfcc=num_mfcc, max_pad_length=max_pad_length):
     audio, sr = librosa.load(audio_path, sr=16000)
     mfccs = librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=num_mfcc)
@@ -32,27 +32,22 @@ def extract_mfcc(audio_path, num_mfcc=num_mfcc, max_pad_length=max_pad_length):
         mfccs = mfccs[:, :max_pad_length]
     return mfccs
 
-# Predict gender from audio file
+# Predict gender from the audio file, ensuring the MFCCs are correctly shaped
 def predict_gender(audio_path, model):
     mfccs = extract_mfcc(audio_path)
-    # Debugging: print the MFCC shape before and after reshaping
-    print(f"MFCC shape before reshaping: {mfccs.shape}")
-    if mfccs.shape != (1, num_mfcc, max_pad_length, 1):
-        mfccs = mfccs[np.newaxis, ...]  # Add batch dimension
-        if mfccs.shape[2] < max_pad_length:
-            padding = ((0, 0), (0, 0), (0, max_pad_length - mfccs.shape[2]), (0, 0))
-            mfccs = np.pad(mfccs, padding, 'constant')
-        elif mfccs.shape[2] > max_pad_length:
-            mfccs = mfccs[:, :, :max_pad_length, :]
-    print(f"MFCC shape after reshaping: {mfccs.shape}")
+    print(f"MFCC shape before reshaping: {mfccs.shape}")  # Debugging: print the shape before reshaping
+    mfccs = mfccs[np.newaxis, ..., np.newaxis]  # Reshape mfccs to 4D if necessary
+    print(f"MFCC shape after reshaping: {mfccs.shape}")  # Debugging: print the shape after reshaping
     prediction = model.predict(mfccs)
     return "Male" if prediction > 0.5 else "Female"
 
+# Load the pre-trained model
 model = load_pretrained_model()
 
+# Title for the Streamlit app
 st.title("Audio Gender Prediction")
 
-# Audio recording function using JavaScript
+# JavaScript function for audio recording in the browser
 def audio_recorder():
     st.markdown("""
         <script>
@@ -120,6 +115,7 @@ def audio_recorder():
 
 audio_recorder()
 
+# File uploader for the audio file and prediction display
 uploaded_file = st.file_uploader("Or upload an audio file", type=["webm", "wav", "mp3", "ogg"])
 if uploaded_file is not None:
     with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
