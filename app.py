@@ -11,6 +11,10 @@ from tensorflow.keras.models import load_model
 import os
 import tempfile
 
+# Parameters to match the model's expected input
+num_mfcc = 13  # Change this based on your model's architecture
+max_pad_length = 173  # Change this based on your model's architecture
+
 # Load and return the pre-trained model
 def load_pretrained_model():
     model_path = './voice__fm_model.h5'
@@ -19,7 +23,7 @@ def load_pretrained_model():
     return model
 
 # Extract MFCC features from audio
-def extract_mfcc(audio_path, num_mfcc=13, max_pad_length=173):
+def extract_mfcc(audio_path, num_mfcc=num_mfcc, max_pad_length=max_pad_length):
     audio, sr = librosa.load(audio_path, sr=16000)
     mfccs = librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=num_mfcc)
     if mfccs.shape[1] < max_pad_length:
@@ -33,7 +37,13 @@ def predict_gender(audio_path, model):
     mfccs = extract_mfcc(audio_path)
     # Debugging: print the MFCC shape before and after reshaping
     print(f"MFCC shape before reshaping: {mfccs.shape}")
-    mfccs = mfccs[np.newaxis, ..., np.newaxis]  # Reshape mfccs to 4D if necessary
+    if mfccs.shape != (1, num_mfcc, max_pad_length, 1):
+        mfccs = mfccs[np.newaxis, ...]  # Add batch dimension
+        if mfccs.shape[2] < max_pad_length:
+            padding = ((0, 0), (0, 0), (0, max_pad_length - mfccs.shape[2]), (0, 0))
+            mfccs = np.pad(mfccs, padding, 'constant')
+        elif mfccs.shape[2] > max_pad_length:
+            mfccs = mfccs[:, :, :max_pad_length, :]
     print(f"MFCC shape after reshaping: {mfccs.shape}")
     prediction = model.predict(mfccs)
     return "Male" if prediction > 0.5 else "Female"
