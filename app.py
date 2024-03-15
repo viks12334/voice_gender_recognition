@@ -117,5 +117,13 @@ def audio_recorder():
 
 audio_recorder()
 
-uploaded_file = st.file_uploader("Or upload an audio file", type=["webm", "wav", "mp3", "ogg
+uploaded_file = st.file_uploader("Or upload an audio file", type=["webm", "wav", "mp3", "ogg"])
+if uploaded_file is not None:
+    with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
+        tmp_file.write(uploaded_file.getbuffer())
+        tmp_file_path = tmp_file.name
 
+    prediction = predict_gender(tmp_file_path, model)
+    st.write(f"Predicted Gender: {prediction}")
+
+    os.remove(tmp_file_path)
