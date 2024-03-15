@@ -15,6 +15,8 @@ import tempfile
 def load_pretrained_model():
     model_path = './voice__fm_model.h5'
     model = load_model(model_path)
+    for layer in model.layers:
+        print(layer.input_shape)  
     return model
 
 # Extract MFCC features from audio
@@ -31,8 +33,10 @@ def extract_mfcc(audio_path, num_mfcc=13, max_pad_length=173):
 # Predict gender from audio file
 def predict_gender(audio_path, model):
     mfccs = extract_mfcc(audio_path)
-    # Ensure correct shape: (batch_size, num_mfcc, max_pad_length, 1)
-    mfccs = mfccs[np.newaxis, ..., np.newaxis] 
+    print(f"MFCC shape before reshaping: {mfccs.shape}")  # Debugging: print the shape before reshaping
+    # Reshape mfccs to ensure it has 4 dimensions: (1, num_mfcc, max_pad_length, 1)
+    mfccs = mfccs[np.newaxis, ..., np.newaxis]
+    print(f"MFCC shape after reshaping: {mfccs.shape}")  # Debugging: print the shape after reshaping
     prediction = model.predict(mfccs)
     return "Male" if prediction > 0.5 else "Female"
 
