@@ -11,15 +11,21 @@ from tensorflow.keras.models import load_model
 import os
 import tempfile
 
-# Define the model's expected input parameters
-num_mfcc = 13  # Update this based on your model's expected input
-max_pad_length = 173  # Update this based on your model's expected input
+# Define the expected input parameters for the model
+num_mfcc = 13  # Adjust this based on your model's architecture
+max_pad_length = 173  # Adjust this based on your model's architecture
 
 # Load and return the pre-trained model, and print its expected input shape
 def load_pretrained_model():
     model_path = './voice__fm_model.h5'
     model = load_model(model_path)
-    print(f"Model input shape: {model.layers[0].input_shape}")  # Assuming the first layer is the input layer
+    
+    # Check if the model has layers and the first layer has an input shape attribute
+    if model.layers and hasattr(model.layers[0], 'input_shape'):
+        print(f"Model input shape: {model.layers[0].input_shape}")
+    else:
+        print("Unable to determine the input shape of the model's first layer.")
+    
     return model
 
 # Extract MFCC features from audio, ensuring they match the expected input shape
@@ -35,16 +41,17 @@ def extract_mfcc(audio_path, num_mfcc=num_mfcc, max_pad_length=max_pad_length):
 # Predict gender from the audio file, ensuring the MFCCs are correctly shaped
 def predict_gender(audio_path, model):
     mfccs = extract_mfcc(audio_path)
-    print(f"MFCC shape before reshaping: {mfccs.shape}")  # Debugging: print the shape before reshaping
+    # Debugging: print the MFCC shape before and after reshaping
+    print(f"MFCC shape before reshaping: {mfccs.shape}")
     mfccs = mfccs[np.newaxis, ..., np.newaxis]  # Reshape mfccs to 4D if necessary
-    print(f"MFCC shape after reshaping: {mfccs.shape}")  # Debugging: print the shape after reshaping
+    print(f"MFCC shape after reshaping: {mfccs.shape}")
     prediction = model.predict(mfccs)
     return "Male" if prediction > 0.5 else "Female"
 
 # Load the pre-trained model
 model = load_pretrained_model()
 
-# Title for the Streamlit app
+# Streamlit app title
 st.title("Audio Gender Prediction")
 
 # JavaScript function for audio recording in the browser
