@@ -41,9 +41,8 @@ def extract_mfcc(audio_path, num_mfcc=num_mfcc, max_pad_length=max_pad_length):
 # Predict gender from the audio file, ensuring the MFCCs are correctly shaped
 def predict_gender(audio_path, model):
     mfccs = extract_mfcc(audio_path)
-    # Debugging: print the MFCC shape before and after reshaping
     print(f"MFCC shape before reshaping: {mfccs.shape}")
-    mfccs = mfccs[np.newaxis, ..., np.newaxis]  # Reshape mfccs to 4D if necessary
+    mfccs = mfccs[np.newaxis, ...]  # Add batch dimension
     print(f"MFCC shape after reshaping: {mfccs.shape}")
     prediction = model.predict(mfccs)
     return "Male" if prediction > 0.5 else "Female"
