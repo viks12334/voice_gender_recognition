@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
-
+#The transcription function has not been successfully established in the study.
 
 import os
 import librosa
