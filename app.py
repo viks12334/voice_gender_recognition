@@ -49,7 +49,7 @@ if audio_file is not None:
     audio_data = preprocess_audio(audio_file)
     audio_data = np.expand_dims(audio_data, axis=[0, -1])
     
-    model = load_model('/path/to/your/model.h5')
+    model = load_model('./model.h5')
     
     stt_prediction, gender_prediction = model.predict(audio_data)
 
