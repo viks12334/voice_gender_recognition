@@ -7,128 +7,48 @@
 import streamlit as st
 import librosa
 import numpy as np
-from tensorflow.keras.models import load_model
-import os
-import tempfile
+import tensorflow as tf
 
-# Define the expected input parameters for the model
-num_mfcc = 13  # Adjust this based on your model's architecture
-max_pad_length = 173  # Adjust this based on your model's architecture
-
-# Load and return the pre-trained model, and print its expected input shape
-def load_pretrained_model():
-    model_path = './voice__fm_model.h5'
-    model = load_model(model_path)
-    
-    # Check if the model has layers and the first layer has an input shape attribute
-    if model.layers and hasattr(model.layers[0], 'input_shape'):
-        print(f"Model input shape: {model.layers[0].input_shape}")
+def preprocess_audio(file_path, max_pad_len=937):
+    audio, sample_rate = librosa.load(file_path, sr=48000)
+    mfccs = librosa.feature.mfcc(y=audio, sr=sample_rate, n_mfcc=40, hop_length=512)
+    pad_width = max_pad_len - mfccs.shape[1]
+    if pad_width < 0:
+        mfccs = mfccs[:, :max_pad_len]
     else:
-        print("Unable to determine the input shape of the model's first layer.")
-    
-    return model
-
-# Extract MFCC features from audio, ensuring they match the expected input shape
-def extract_mfcc(audio_path, num_mfcc=num_mfcc, max_pad_length=max_pad_length):
-    audio, sr = librosa.load(audio_path, sr=16000)
-    mfccs = librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=num_mfcc)
-    if mfccs.shape[1] < max_pad_length:
-        mfccs = np.pad(mfccs, pad_width=((0, 0), (0, max_pad_length - mfccs.shape[1])), mode='constant')
-    elif mfccs.shape[1] > max_pad_length:
-        mfccs = mfccs[:, :max_pad_length]
+        mfccs = np.pad(mfccs, pad_width=((0, 0), (0, pad_width)), mode='constant')
     return mfccs
 
-# Predict gender from the audio file, ensuring the MFCCs are correctly shaped
-def predict_gender(audio_path, model):
-    mfccs = extract_mfcc(audio_path)
-    print(f"MFCC shape before reshaping: {mfccs.shape}")
-    mfccs = mfccs[np.newaxis, ...]  # Add batch dimension
-    print(f"MFCC shape after reshaping: {mfccs.shape}")
-    prediction = model.predict(mfccs)
-    return "Male" if prediction > 0.5 else "Female"
+def load_model(model_path):
+    return tf.keras.models.load_model(model_path)
 
-# Load the pre-trained model
-model = load_pretrained_model()
+st.title("Voice Transcription and Gender Detection")
 
-# Streamlit app title
-st.title("Audio Gender Prediction")
+# Audio file uploader
+audio_file = st.file_uploader("Upload audio", type=['wav'])
 
-# JavaScript function for audio recording in the browser
-def audio_recorder():
-    st.markdown("""
-        <script>
-        const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+if audio_file is not None:
+    # Display a warning if the audio is longer than 10 seconds
+    audio_length = librosa.get_duration(filename=audio_file)
+    if audio_length > 10:
+        st.warning("Please upload an audio file of 10 seconds or less.")
+    else:
+        # Process the audio file if it's the correct length
+        audio_data = preprocess_audio(audio_file)
 
-        async function recordAudio() {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            const mediaRecorder = new MediaRecorder(stream);
-            let audioChunks = [];
+        # Reshape the data to fit the model input
+        audio_data = np.expand_dims(audio_data, axis=[0, -1])
 
-            mediaRecorder.addEventListener("dataavailable", event => {
-                audioChunks.push(event.data);
-            });
+        # Load the model (make sure to replace 'model_path' with the actual path to your model)
+        model = load_model('./model.h5')
 
-            const start = () => {
-                audioChunks = [];
-                mediaRecorder.start();
-            };
+        # Make predictions
+        stt_prediction, gender_prediction = model.predict(audio_data)
 
-            const stop = () =>
-                new Promise(resolve => {
-                    mediaRecorder.addEventListener("stop", () => {
-                        const audioBlob = new Blob(audioChunks);
-                        const audioUrl = URL.createObjectURL(audioBlob);
-                        const audio = new Audio(audioUrl);
-                        const play = () => audio.play();
-                        resolve({ audioBlob, audioUrl, play });
-                    });
+        # Decode the transcription and gender prediction
+        transcription = "Decoded transcription here"
+        gender = "Male" if gender_prediction[0][0] > 0.5 else "Female"
 
-                    mediaRecorder.stop();
-                });
-
-            return { start, stop };
-        }
-
-        (async () => {
-            const recordButton = document.getElementById('record');
-            const stopButton = document.getElementById('stop');
-            const audioElement = document.getElementById('audio');
-            const downloadLink = document.getElementById('download');
-            let recorder = await recordAudio();
-
-            recordButton.addEventListener("click", () => {
-                recorder.start();
-                recordButton.setAttribute("disabled", true);
-                stopButton.removeAttribute("disabled");
-            });
-
-            stopButton.addEventListener("click", async () => {
-                audio = await recorder.stop();
-                audioElement.src = audio.audioUrl;
-                downloadLink.href = audio.audioUrl;
-                downloadLink.download = 'audio.webm';
-                downloadLink.style.display = 'block';
-                recordButton.removeAttribute("disabled");
-                stopButton.setAttribute("disabled", true);
-            });
-        })();
-        </script>
-        <button id="record">Record</button>
-        <button id="stop" disabled>Stop</button>
-        <audio id="audio" controls></audio>
-        <a id="download" style="display: none">Download</a>
-        """, unsafe_allow_html=True)
-
-audio_recorder()
-
-# File uploader for the audio file and prediction display
-uploaded_file = st.file_uploader("Or upload an audio file", type=["webm", "wav", "mp3", "ogg"])
-if uploaded_file is not None:
-    with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
-        tmp_file.write(uploaded_file.getbuffer())
-        tmp_file_path = tmp_file.name
-
-    prediction = predict_gender(tmp_file_path, model)
-    st.write(f"Predicted Gender: {prediction}")
-
-    os.remove(tmp_file_path)
+        # Display the results
+        st.write(f"Transcription: {transcription}")
+        st.write(f"Gender: {gender}")
