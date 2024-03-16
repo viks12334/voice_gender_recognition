@@ -17,7 +17,6 @@ num_classes = len(characters)
 
 # Decoding function
 def decode_transcription(prediction):
-    # Assuming the prediction is a 2D array (time steps, num_classes)
     transcription = ''
     for timestep in prediction:
         char_index = np.argmax(timestep)
@@ -46,13 +45,22 @@ st.title("Audio Transcription and Gender Detection")
 audio_file = st.file_uploader("Upload audio", type=['wav'])
 
 if audio_file is not None:
+    # Preprocessing
     audio_data = preprocess_audio(audio_file)
-    audio_data = np.expand_dims(audio_data, axis=[0, -1])
+    st.write('Preprocessed audio shape:', audio_data.shape)
     
+    audio_data = np.expand_dims(audio_data, axis=0)
+    st.write('Input shape to the model:', audio_data.shape)
+    
+    # Load the model
     model = load_model('./model.h5')
     
+    # Model prediction
     stt_prediction, gender_prediction = model.predict(audio_data)
-
+    st.write('Raw STT prediction:', stt_prediction)
+    st.write('Raw gender prediction:', gender_prediction)
+    
+    # Decoding transcription
     transcription = decode_transcription(stt_prediction[0])
     gender = "Male" if gender_prediction[0][0] > 0.5 else "Female"
 
