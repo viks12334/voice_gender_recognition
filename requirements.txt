@@ -4,4 +4,4 @@ numpy
 tensorflow==2.15.0
 SoundFile
 scipy
-google-cloud-speech
+
