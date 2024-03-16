@@ -41,7 +41,7 @@ def load_model(model_path):
     return tf.keras.models.load_model(model_path)
 
 # Streamlit app
-st.title("Voice Transcription and Gender Detection")
+st.title("Gender identification from voice")
 
 audio_file = st.file_uploader("Upload audio", type=['wav'])
 
