@@ -43,6 +43,8 @@ def load_model(model_path):
 # Streamlit app
 st.title("Gender identification from voice")
 
+st.write("文字起こしは未学習のため現在は動作しません")
+
 audio_file = st.file_uploader("Upload audio", type=['wav'])
 
 if audio_file is not None:
