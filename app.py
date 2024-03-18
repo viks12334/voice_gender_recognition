@@ -41,7 +41,7 @@ def load_model(model_path):
     return tf.keras.models.load_model(model_path)
 
 # Streamlit app
-st.title("Gender identification from voice")
+st.title("Audio transcription and gender identification from voice")
 
 st.write("文字起こしは未学習のため現在は動作しません")
 
