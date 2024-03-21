@@ -26,7 +26,7 @@ def preprocess_audio(file_path, max_pad_len=937):
         mfccs = np.pad(mfccs, pad_width=((0, 0), (0, pad_width)), mode='constant')
     return mfccs
 
-# 文字へのエンコーディング
+# 文字のエンコード
 characters = ' ' + string.ascii_lowercase
 num_classes = len(characters)
 char_to_index = dict((c, i) for i, c in enumerate(characters))
