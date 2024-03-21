@@ -16,7 +16,6 @@ num_classes = len(characters)
 
 # デコード関数
 def decode_transcription(prediction):
-    # Assuming the prediction is a 2D array (time steps, num_classes)
     transcription = ''
     for timestep in prediction:
         char_index = np.argmax(timestep)
