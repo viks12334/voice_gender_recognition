@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-#The transcription function has not been successfully established in the study.
+#このコードはGoogle Colaboratoryで作成されています。
 
 import os
 import librosa
@@ -15,7 +15,7 @@ import string
 # Mount Google Drive
 drive.mount('/content/drive')
 
-# Data Preprocessing
+# 音声データの処理
 def preprocess_audio(file_path, max_pad_len=937):
     audio, sample_rate = librosa.load(file_path, sr=48000)
     mfccs = librosa.feature.mfcc(y=audio, sr=sample_rate, n_mfcc=40, hop_length=512)
@@ -26,7 +26,7 @@ def preprocess_audio(file_path, max_pad_len=937):
         mfccs = np.pad(mfccs, pad_width=((0, 0), (0, pad_width)), mode='constant')
     return mfccs
 
-# Character-level encoding
+# 文字へのエンコーディング
 characters = ' ' + string.ascii_lowercase
 num_classes = len(characters)
 char_to_index = dict((c, i) for i, c in enumerate(characters))
@@ -43,7 +43,7 @@ def encode_transcription(transcription, max_length=100):
         encoded[i] = one_hot_encode(character)
     return encoded
 
-# Load Data
+# 音声データの読み込み
 def load_data(data_directory='/content/drive/My Drive/voice_data', max_length=100):
     data = []
     labels = ['male', 'female']
@@ -53,16 +53,16 @@ def load_data(data_directory='/content/drive/My Drive/voice_data', max_length=10
             if filename.endswith('.wav'):
                 file_path = os.path.join(path, filename)
 
-                # Assign a dummy transcription if the actual file is not found
+                # ファイルが見つからない場合はダミーの文字を割り当てる
                 transcription = "dummy transcription"
 
-                # Encode the transcription
+                # 文字のエンコード
                 encoded_transcription = encode_transcription(transcription, max_length=max_length)
 
                 data.append((file_path, label, encoded_transcription))
     return data
 
-# Model Creation
+# モデルの作成
 def create_model(input_shape, output_dim):
     input_layer = Input(shape=input_shape)
     x = Conv2D(32, kernel_size=(2, 2), activation='relu')(input_layer)
@@ -77,16 +77,16 @@ def create_model(input_shape, output_dim):
     model = Model(inputs=input_layer, outputs=[stt_branch, gender_branch])
     return model
 
-# Load and preprocess your data
+# データの読み込みと前処理
 data = load_data()
 x_train = np.array([preprocess_audio(file_path) for file_path, _, _ in data])
 x_train = np.expand_dims(x_train, -1)  # Add channel dimension
 
-# Prepare your labels
+# ラベルの準備
 y_train_gender = np.array([1 if label == 'male' else 0 for _, label, _ in data])
 y_train_stt = np.array([transcription for _, _, transcription in data])
 
-# Model Training
+# モデルの学習
 max_transcription_length = 100  # Adjust based on your dataset
 model = create_model(input_shape=(40, 937, 1), output_dim=max_transcription_length * num_classes)
 model.compile(optimizer='adam',
@@ -94,5 +94,5 @@ model.compile(optimizer='adam',
               metrics=['accuracy'])
 model.fit(x_train, {'stt_output': y_train_stt.reshape(len(y_train_stt), -1), 'gender_output': y_train_gender}, epochs=10, batch_size=32)
 
-# Save the Model
+# モデルの保存
 model.save('/content/drive/My Drive/model.h5')
