@@ -3,7 +3,6 @@
 
 # In[1]:
 
-
 import streamlit as st
 import librosa
 import numpy as np
@@ -11,11 +10,11 @@ import tensorflow as tf
 import io
 import string
 
-# Character set used during training
+# 学習で使用する文字セット
 characters = ' ' + string.ascii_lowercase
 num_classes = len(characters)
 
-# Decoding function
+# デコード関数
 def decode_transcription(prediction):
     # Assuming the prediction is a 2D array (time steps, num_classes)
     transcription = ''
@@ -24,7 +23,7 @@ def decode_transcription(prediction):
         transcription += characters[char_index]
     return transcription.strip()
 
-# Audio processing function
+# 音を処理する関数
 def preprocess_audio(uploaded_file, max_pad_len=937):
     file_bytes = io.BytesIO(uploaded_file.read())
     audio, sample_rate = librosa.load(file_bytes, sr=48000)
@@ -36,11 +35,11 @@ def preprocess_audio(uploaded_file, max_pad_len=937):
         mfccs = np.pad(mfccs, pad_width=((0, 0), (0, pad_width)), mode='constant')
     return mfccs
 
-# Model loading function
+# モデルの読み込み関数
 def load_model(model_path):
     return tf.keras.models.load_model(model_path)
 
-# Streamlit app
+# Streamlitアプリ
 st.title("Audio transcription and gender identification from voice")
 
 st.write("Webアプリ版では文字起こし機能が使用できません")
