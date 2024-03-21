@@ -43,7 +43,7 @@ def load_model(model_path):
 # Streamlit app
 st.title("Audio transcription and gender identification from voice")
 
-st.write("文字起こしは未学習のため現在は動作しません")
+st.write("Webアプリ版では文字起こし機能が使用できません")
 
 audio_file = st.file_uploader("Upload audio", type=['wav'])
 
